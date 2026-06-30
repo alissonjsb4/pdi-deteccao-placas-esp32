@@ -1,44 +1,53 @@
-\documentclass[10pt,twocolumn]{article}
+\documentclass[conference]{IEEEtran}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[brazil]{babel}
-\usepackage[margin=2cm]{geometry}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{url}
-\usepackage{caption}
-\captionsetup{font=small,labelfont=bf}
+\usepackage{microtype}
 \graphicspath{{figuras/}}
 
-\title{\vspace{-1.0cm}\textbf{Detecção de Placas Veiculares com MobileNetV1 e
-Detector por Grade Embarcado em ESP32-S3}}
-\author{Carlos Vinícius dos Santos Mesquita \and Alisson Jaime Sales Barros \and
-Victor Guedes Alves Teixeira \and Kaique Ferreira Braga Silva\\[4pt]
-\small TI0147 -- Fundamentos de Processamento Digital de Imagens\\
-\small Professor: Paulo Cesar Cortez}
-\date{30 de junho de 2026}
-
 \begin{document}
+
+\title{Detecção de Placas Veiculares com MobileNetV1 e\\
+Detector por Grade Embarcado em ESP32-S3}
+
+\author{
+\IEEEauthorblockN{Carlos Vinícius dos Santos Mesquita,
+Alisson Jaime Sales Barros,\\
+Victor Guedes Alves Teixeira e
+Kaique Ferreira Braga Silva}
+\IEEEauthorblockA{TI0147 --- Fundamentos de Processamento Digital de Imagens\\
+Professor: Paulo Cesar Cortez\\
+Universidade Federal do Ceará}
+}
+
 \maketitle
 
 \begin{abstract}
-\noindent Este trabalho apresenta um sistema completo de detecção de placas
-veiculares baseado na arquitetura \textbf{MobileNetV1} com uma cabeça de
-\emph{detector por grade} (saída espacial $7\times7\times5$), treinado em
-TensorFlow/Keras e embarcado em uma placa \textbf{ESP32-S3} com câmera OV5640.
+Este trabalho apresenta um sistema completo de detecção de placas
+veiculares baseado na arquitetura MobileNetV1 com uma cabeça de
+detector por grade (saída espacial $7\times7\times5$), treinado em
+TensorFlow/Keras e embarcado em uma placa ESP32-S3 com câmera OV5640.
 O modelo foi quantizado em INT8 e convertido para TensorFlow Lite, viabilizando a
 inferência diretamente no microcontrolador. Avaliamos o sistema em três
 modalidades (imagem, vídeo e captura em tempo real com a ESP32-CAM), comparamos o
 desempenho entre PC e dispositivo embarcado, e aplicamos pós-processamento com
 filtragem por confiança e segmentação dos caracteres. Os resultados, obtidos sobre
-\textbf{5 execuções}, mostram IoU médio de $0{,}731\pm0{,}005$ no conjunto
+cinco execuções, mostram IoU médio de $0{,}731\pm0{,}005$ no conjunto
 combinado e \emph{recall} de $0{,}922$, com a quantização INT8 preservando a
 qualidade (IoU praticamente idêntico ao modelo Keras). A inferência custa
 $\sim$4--7~ms no PC contra $\sim$117~s na ESP32-S3, evidenciando o gargalo do
 hardware embarcado. O acréscimo de imagens negativas reduziu os falsos positivos a
 zero no limiar $0{,}95$.
 \end{abstract}
+
+\begin{IEEEkeywords}
+detecção de objetos, MobileNetV1, TensorFlow Lite, sistemas embarcados, ESP32,
+quantização INT8, processamento digital de imagens.
+\end{IEEEkeywords}
 
 \section{Introdução}
 A detecção de objetos é uma tarefa central da Visão Computacional, consistindo em
@@ -66,11 +75,10 @@ reforçar exemplos difíceis. A Tabela~\ref{tab:dados} resume a divisão efetiva
 utilizada. Adicionalmente, incorporamos \textbf{16 imagens negativas} (cenas sem
 placa) para reduzir falsos positivos.
 
-\begin{table}[t]
+\begin{table}[!t]
 \centering
 \caption{Divisão da base utilizada (uma classe: \texttt{plate}).}
 \label{tab:dados}
-\small
 \begin{tabular}{lcc}
 \toprule
 Conjunto & Treino & Validação\\
@@ -110,9 +118,9 @@ O treino emprega o otimizador Adam em duas fases (\emph{transfer learning} segui
 de \emph{fine-tuning} da cabeça): 12 e 50 épocas, \emph{batch} 8, com
 \texttt{ReduceLROnPlateau} e \texttt{EarlyStopping}, e função de perda combinando
 confiança (objectness) e regressão da caixa. Cada configuração foi executada
-\textbf{5 vezes}, reportando-se média e desvio padrão (Seção~\ref{sec:res}). O
+\textbf{cinco vezes}, reportando-se média e desvio padrão (Seção~\ref{sec:res}). O
 ambiente de treino foi o Google Colab (TensorFlow~2.20.0, Python~3.12, GPU
-NVIDIA Tesla T4).
+NVIDIA Tesla~T4).
 
 \subsection{Pós-processamento}
 Aplicamos \textbf{filtragem por confiança}: a detecção só é considerada válida
@@ -122,6 +130,14 @@ realizamos a \textbf{segmentação dos caracteres} da placa (obrigatória) por
 técnicas clássicas de OpenCV: recorte da ROI, equalização local (CLAHE), realce
 por \emph{BlackHat}, limiarização de Otsu/adaptativa e filtragem de componentes
 conectados (Figura~\ref{fig:seg}).
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{fig_segmentacao.png}
+\caption{Pós-processamento: ROI da placa, máscara de segmentação e caracteres
+segmentados (OpenCV).}
+\label{fig:seg}
+\end{figure}
 
 \subsection{Conversão e Quantização para a ESP32}
 O modelo Keras foi convertido para TensorFlow Lite em três variantes (Float32,
@@ -136,24 +152,23 @@ na PSRAM e uma tabela de partições personalizada de 5~MB acomoda o aplicativo
 
 \subsection{Condições Experimentais}
 O \textbf{treinamento e a avaliação das métricas} foram realizados no Google Colab
-(TensorFlow~2.20.0, Python~3.12, GPU NVIDIA Tesla T4 do Google
-Colab). Os \textbf{testes em PC} (execução LiteRT/TFLite) usaram um notebook com
-CPU Intel Core i7-14700HX, 16~GB de RAM, Windows~11 (64~bits), Python~3.14. O
-\textbf{dispositivo embarcado} é uma ESP32-S3 (16~MB \emph{flash}, 8~MB PSRAM OPI,
-CPU a 240~MHz) com câmera OV5640, usando a biblioteca \texttt{TensorFlowLite\_ESP32}
-(Arduino-ESP32~3.3.8 / ESP-IDF~5.5).
+(TensorFlow~2.20.0, Python~3.12, GPU NVIDIA Tesla~T4). Os \textbf{testes em PC}
+(execução LiteRT/TFLite) usaram um notebook com CPU Intel Core i7-14700HX, 16~GB de
+RAM, Windows~11 (64~bits), Python~3.14. O \textbf{dispositivo embarcado} é uma
+ESP32-S3 (16~MB \emph{flash}, 8~MB PSRAM OPI, CPU a 240~MHz) com câmera OV5640,
+usando a biblioteca \texttt{TensorFlowLite\_ESP32} (Arduino-ESP32~3.3.8 /
+ESP-IDF~5.5).
 
 \section{Resultados}\label{sec:res}
-\subsection{Desempenho de detecção (5 execuções)}
-A Tabela~\ref{tab:cinco} apresenta as métricas médias e desvios das 5 execuções.
+\subsection{Desempenho de detecção (cinco execuções)}
+A Tabela~\ref{tab:cinco} apresenta as métricas médias e desvios das cinco execuções.
 O modelo atinge \emph{recall} elevado na Base~1 e no conjunto combinado; o
 desempenho menor na Base~2 reflete sua maior dificuldade e menor tamanho.
 
-\begin{table}[t]
+\begin{table}[!t]
 \centering
-\caption{Métricas em 5 execuções (média $\pm$ desvio).}
+\caption{Métricas em cinco execuções (média $\pm$ desvio).}
 \label{tab:cinco}
-\small
 \begin{tabular}{lccc}
 \toprule
 Métrica & Base 1 & Base 2 & Mix\\
@@ -171,23 +186,22 @@ F1@0,5             & $0{,}983$ & $0{,}750$ & $0{,}944$\\
 A Tabela~\ref{tab:plat} compara plataformas. A quantização INT8 \textbf{preservou a
 qualidade} (IoU praticamente idêntico ao Keras), reduzindo o modelo de 8{,}75~MB
 (Float32) para 2{,}35~MB. No PC a inferência custa poucos milissegundos; na
-ESP32-S3, $\sim$117~s por \emph{frame} --- cerca de $1{,}7\times10^{4}$ vezes mais
+ESP32-S3, $\sim$117~s por \emph{frame}, cerca de $1{,}7\times10^{4}$ vezes mais
 lenta. O gargalo decorre dos \emph{kernels} de referência da biblioteca
 TFLite~Micro e do acesso à PSRAM, não do modelo em si.
 
-\begin{table}[t]
+\begin{table}[!t]
 \centering
 \caption{Tempo de inferência, tamanho e IoU (conjunto Mix).}
 \label{tab:plat}
-\small
 \begin{tabular}{lccc}
 \toprule
 Plataforma / modelo & Tempo & Tamanho & IoU\\
 \midrule
-Keras (PC, float)        & $\sim$96{,}9~ms & ---      & 0,736\\
+Keras (PC, float)        & $\sim$96{,}9~ms & n/d      & 0,736\\
 TFLite Float32 (PC)      & $\sim$6{,}5~ms  & 8,75~MB  & 0,736\\
 TFLite INT8 (PC, LiteRT) & $\sim$4--7~ms   & 2,35~MB  & 0,732\\
-\textbf{TFLite INT8 (ESP32-S3)} & $\sim$\textbf{117~s} & 2,35~MB & ---\\
+\textbf{TFLite INT8 (ESP32-S3)} & $\sim$\textbf{117~s} & 2,35~MB & n/d\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -200,11 +214,10 @@ na própria ESP32-S3 confirmaram o ganho: cenas sem placa caíram de $\sim0{,}62
 (modelo antigo) para $0{,}42$--$0{,}58$, enquanto uma placa real bem enquadrada
 atinge $0{,}98$--$0{,}99$.
 
-\begin{table}[t]
+\begin{table}[!t]
 \centering
 \caption{Falsos positivos em imagens sem placa por limiar.}
 \label{tab:neg}
-\small
 \begin{tabular}{lcccc}
 \toprule
 Limiar & 0,50 & 0,90 & 0,95 & 0,98\\
@@ -217,15 +230,9 @@ Falsos positivos & 4/4 & 1/4 & \textbf{0/4} & 0/4\\
 \subsection{Avaliação nas três modalidades}
 \textbf{Imagem.} A Figura~\ref{fig:det} mostra a detecção em uma imagem: a caixa é
 posicionada corretamente sobre a placa e o mapa de confiança da grade destaca a
-célula correta. \textbf{Vídeo.} O modelo foi executado quadro a quadro sobre uma
-sequência de vídeo (Figura~\ref{fig:frame}), atingindo confiança de até $0{,}996$
-no melhor \emph{frame}, com taxa de processamento de centenas de FPS no PC.
-\textbf{Tempo real.} A captura ao vivo com a OV5640 acoplada à ESP32-S3 produziu
-detecção embarcada com confiança $0{,}97$, disparando o envio automático da imagem
-anotada (Telegram). A Figura~\ref{fig:semplaca} ilustra a correta \emph{rejeição}
-de um quadro sem placa nítida (confiança abaixo de $0{,}95$).
+célula correta.
 
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{fig_deteccao.png}
 \caption{Detecção em imagem: entrada, caixa prevista (confiança $\approx1{,}0$) e
@@ -233,24 +240,25 @@ mapa de confiança da grade $7\times7$.}
 \label{fig:det}
 \end{figure}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{fig_segmentacao.png}
-\caption{Pós-processamento: ROI da placa, máscara de segmentação e caracteres
-segmentados (OpenCV).}
-\label{fig:seg}
-\end{figure}
+\textbf{Vídeo.} O modelo foi executado quadro a quadro sobre uma
+sequência de vídeo (Figura~\ref{fig:frame}), atingindo confiança de até $0{,}996$
+no melhor \emph{frame}, com taxa de processamento de centenas de FPS no PC.
 
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.74\columnwidth]{fig_frame_anotado.png}
+\includegraphics[width=0.62\columnwidth]{fig_frame_anotado.png}
 \caption{Detecção em vídeo (melhor \emph{frame}, confiança $0{,}996$).}
 \label{fig:frame}
 \end{figure}
 
-\begin{figure}[t]
+\textbf{Tempo real.} A captura ao vivo com a OV5640 acoplada à ESP32-S3 produziu
+detecção embarcada com confiança $0{,}97$, disparando o envio automático da imagem
+anotada (Telegram). A Figura~\ref{fig:semplaca} ilustra a correta \emph{rejeição}
+de um quadro sem placa nítida (confiança abaixo de $0{,}95$).
+
+\begin{figure}[!t]
 \centering
-\includegraphics[width=0.74\columnwidth]{fig_sem_placa.png}
+\includegraphics[width=0.62\columnwidth]{fig_sem_placa.png}
 \caption{Rejeição correta: quadro sem placa nítida, confiança abaixo do limiar.}
 \label{fig:semplaca}
 \end{figure}
@@ -259,7 +267,7 @@ segmentados (OpenCV).}
 A quantização INT8 mostrou-se vantajosa: reduziu o modelo em $\sim$73\% sem perda
 mensurável de IoU, viabilizando o embarcamento. A principal limitação é o
 \textbf{tempo de inferência na ESP32-S3} ($\sim$117~s/\emph{frame}), atribuível aos
-\emph{kernels} de referência da TFLite~Micro e à latência da PSRAM --- e não ao
+\emph{kernels} de referência da TFLite~Micro e à latência da PSRAM, e não ao
 tamanho do modelo, já que o mesmo arquivo roda em milissegundos no PC. As imagens
 negativas eliminaram os falsos positivos no limiar de operação. A qualidade da
 câmera OV5640 e o desfoque por movimento afetam a confiança, mitigados por bom
@@ -276,18 +284,18 @@ base de negativas com fotos capturadas pela própria ESP-CAM; e (iv) reconhecime
 óptico (OCR) dos caracteres já segmentados.
 
 \begin{thebibliography}{9}
-\small
-\bibitem{mobilenet} HOWARD, A. G. et al. \emph{MobileNets: Efficient Convolutional
-Neural Networks for Mobile Vision Applications}. arXiv:1704.04861, 2017.
-\bibitem{tf} ABADI, M. et al. \emph{TensorFlow: Large-Scale Machine Learning on
-Heterogeneous Systems}. 2015. \url{https://www.tensorflow.org}.
-\bibitem{tflite} \emph{TensorFlow Lite / LiteRT Guide}.
-\url{https://www.tensorflow.org/lite}.
-\bibitem{roboflow} Roboflow. \emph{Brazil Plates Detector Dataset}.
-\url{https://universe.roboflow.com/testes-bbb7m/brazil-plates-detector-zn2t0}.
-\bibitem{keras} CHOLLET, F. et al. \emph{Keras}. \url{https://keras.io}.
-\bibitem{espidf} Espressif. \emph{ESP-IDF / ESP32-S3 Technical Reference}.
-\url{https://docs.espressif.com}.
+\bibitem{mobilenet} A. G. Howard \emph{et al.}, ``MobileNets: Efficient Convolutional
+Neural Networks for Mobile Vision Applications,'' arXiv:1704.04861, 2017.
+\bibitem{tf} M. Abadi \emph{et al.}, ``TensorFlow: Large-Scale Machine Learning on
+Heterogeneous Systems,'' 2015. [Online]. Disponível: \url{https://www.tensorflow.org}
+\bibitem{tflite} ``TensorFlow Lite / LiteRT Guide.'' [Online]. Disponível:
+\url{https://www.tensorflow.org/lite}
+\bibitem{roboflow} Roboflow, ``Brazil Plates Detector Dataset.'' [Online]. Disponível:
+\url{https://universe.roboflow.com/testes-bbb7m/brazil-plates-detector-zn2t0}
+\bibitem{keras} F. Chollet \emph{et al.}, ``Keras.'' [Online]. Disponível:
+\url{https://keras.io}
+\bibitem{espidf} Espressif, ``ESP-IDF / ESP32-S3 Technical Reference.'' [Online].
+Disponível: \url{https://docs.espressif.com}
 \end{thebibliography}
 
 \end{document}
