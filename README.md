@@ -129,6 +129,3 @@ ESP: placa real bem enquadrada → **0,98–0,99**; cena sem placa → **0,42–
 - 🗃️ Base de dados: *Brazil Plates Detector* (Roboflow, CC BY 4.0)
 - 📄 Enunciado: [`docs/enunciado_trabalho.pdf`](docs/enunciado_trabalho.pdf)
 
-> ⚠️ **Antes de tornar o repositório público:** o firmware contém credenciais
-> (Wi-Fi e *token* do bot do Telegram). Troque-as por valores de exemplo —
-> veja [`firmware_esp32/README.md`](firmware_esp32/README.md).
