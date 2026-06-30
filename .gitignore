@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+
+# LaTeX auxiliares
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+# SO
+Thumbs.db
+.DS_Store
+
+# Arquivos de build do Arduino
+build/
+*.bin
+
+# Versões antigas (contêm credenciais e modelos grandes) — não enviar
+_arquivos_antigos/
