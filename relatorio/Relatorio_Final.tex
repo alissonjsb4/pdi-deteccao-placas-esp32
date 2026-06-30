@@ -112,7 +112,7 @@ de \emph{fine-tuning} da cabeça): 12 e 50 épocas, \emph{batch} 8, com
 confiança (objectness) e regressão da caixa. Cada configuração foi executada
 \textbf{5 vezes}, reportando-se média e desvio padrão (Seção~\ref{sec:res}). O
 ambiente de treino foi o Google Colab (TensorFlow~2.20.0, Python~3.12, GPU
-\textit{[especificar modelo da GPU do Colab]}).
+NVIDIA Tesla T4).
 
 \subsection{Pós-processamento}
 Aplicamos \textbf{filtragem por confiança}: a detecção só é considerada válida
@@ -136,7 +136,7 @@ na PSRAM e uma tabela de partições personalizada de 5~MB acomoda o aplicativo
 
 \subsection{Condições Experimentais}
 O \textbf{treinamento e a avaliação das métricas} foram realizados no Google Colab
-(TensorFlow~2.20.0, Python~3.12, GPU NVIDIA do Google
+(TensorFlow~2.20.0, Python~3.12, GPU NVIDIA Tesla T4 do Google
 Colab). Os \textbf{testes em PC} (execução LiteRT/TFLite) usaram um notebook com
 CPU Intel Core i7-14700HX, 16~GB de RAM, Windows~11 (64~bits), Python~3.14. O
 \textbf{dispositivo embarcado} é uma ESP32-S3 (16~MB \emph{flash}, 8~MB PSRAM OPI,

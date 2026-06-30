@@ -119,7 +119,7 @@ ESP: placa real bem enquadrada → **0,98–0,99**; cena sem placa → **0,42–
 ## 🖥️ Hardware e ambiente
 - **Placa:** ESP32-S3 (16 MB flash, 8 MB PSRAM OPI, CPU 240 MHz) + câmera **OV5640**.
 - **Embarcado:** Arduino-ESP32 3.3.8 / ESP-IDF 5.5, biblioteca `TensorFlowLite_ESP32`.
-- **Treino:** Google Colab (TensorFlow 2.20.0, Python 3.12, GPU NVIDIA).
+- **Treino:** Google Colab (TensorFlow 2.20.0, Python 3.12, GPU NVIDIA Tesla T4).
 - **Frontend/PC:** Python 3, `ai-edge-litert` + OpenCV.
 
 ---
