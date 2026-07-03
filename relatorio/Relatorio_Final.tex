@@ -203,7 +203,7 @@ O modelo Keras foi convertido para TensorFlow Lite em três variantes (Float32,
 para o embarcamento. O arquivo \texttt{.tflite} (2{,}35~MB) foi convertido em um
 \emph{array} C++ (\texttt{xxd -i}), gerando um cabeçalho de \textbf{2.468.584
 bytes}. No firmware (Arduino/ESP-IDF, biblioteca
-\texttt{TensorFlowLite\_ESP32}), o \emph{tensor arena} ($\sim$3{,}4~MB) é alocado
+\texttt{TensorFlowLite\_ESP32}), o \emph{tensor arena} (3~MB) é alocado
 na PSRAM e uma tabela de partições personalizada de 5~MB acomoda o aplicativo
 (3{,}74~MB de \emph{flash}). A placa é uma \textbf{ESP32-S3} (16~MB \emph{flash},
 8~MB PSRAM OPI, CPU a 240~MHz) com câmera \textbf{OV5640}.

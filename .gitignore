@@ -24,3 +24,6 @@ build/
 
 # Versões antigas (contêm credenciais e modelos grandes) — não enviar
 _arquivos_antigos/
+
+# Slides (entregues a parte, nao versionar)
+/*.pdf
