@@ -91,6 +91,16 @@ Negativas (sem placa)     & 12  & 4\\
 \end{tabular}
 \end{table}
 
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.96\textwidth]{fig_preproc.png}
+\caption{Pré-processamento passo a passo: (a) imagem original; (b)
+redimensionamento para $224\times224$; (c) normalização para $[-1,1]$
+(visualizada em falsa cor); (d) modo gray3 (luminância replicada em três
+canais); (e) exemplo de \emph{Data Augmentation} (espelhamento + brilho).}
+\label{fig:preproc}
+\end{figure*}
+
 \section{Arquitetura e Detector por Grade}
 A arquitetura é a \textbf{MobileNetV1} com fator de largura (\emph{width
 multiplier}) $\alpha=0{,}5$ e entrada $224\times224\times3$. Sobre o
@@ -118,16 +128,6 @@ foram avaliados e permanecem selecionáveis em tempo de execução no
 \emph{frontend}. Durante o treino aplicamos \emph{Data Augmentation}:
 espelhamento horizontal, variações de brilho/contraste, ruído e desfoque
 (Figura~\ref{fig:preproc}e).
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.96\textwidth]{fig_preproc.png}
-\caption{Pré-processamento passo a passo: (a) imagem original; (b)
-redimensionamento para $224\times224$; (c) normalização para $[-1,1]$
-(visualizada em falsa cor); (d) modo gray3 (luminância replicada em três
-canais); (e) exemplo de \emph{Data Augmentation} (espelhamento + brilho).}
-\label{fig:preproc}
-\end{figure*}
 
 \subsection{Treinamento}
 O treino emprega o otimizador Adam em duas fases (\emph{transfer learning} seguido
@@ -171,7 +171,7 @@ conectados por área e proporção. A Figura~\ref{fig:seg} mostra o resultado
 sobre um quadro de vídeo e a Figura~\ref{fig:segex} apresenta exemplos
 adicionais em fotografias reais capturadas para o trabalho.
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\columnwidth]{fig_seg_etapas.png}
 \caption{Etapas da segmentação: (a) ROI recortada da caixa prevista; (b) CLAHE;
@@ -181,7 +181,7 @@ segmentados.}
 \label{fig:segetapas}
 \end{figure}
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\columnwidth]{fig_segmentacao.png}
 \caption{Pós-processamento: ROI da placa, máscara de segmentação e caracteres
@@ -189,7 +189,7 @@ segmentados (OpenCV).}
 \label{fig:seg}
 \end{figure}
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.92\columnwidth]{fig_seg_exemplos.png}
 \caption{Exemplos adicionais de detecção e segmentação em três fotografias
@@ -252,7 +252,7 @@ ESP32-S3, $\sim$117~s por \emph{frame}, cerca de $1{,}7\times10^{4}$ vezes mais
 lenta. O gargalo decorre dos \emph{kernels} de referência da biblioteca
 TFLite~Micro e do acesso à PSRAM, não do modelo em si.
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.95\columnwidth]{fig_tempo_log.png}
 \caption{Tempo de inferência do mesmo modelo em cada plataforma (escala
@@ -302,7 +302,7 @@ Falsos positivos & 4/4 & 1/4 & \textbf{0/4} & 0/4\\
 posicionada corretamente sobre a placa e o mapa de confiança da grade destaca a
 célula correta.
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\columnwidth]{fig_deteccao.png}
 \caption{Detecção em imagem: entrada, caixa prevista (confiança $\approx1{,}0$) e
@@ -314,7 +314,7 @@ mapa de confiança da grade $7\times7$.}
 sequência de vídeo (Figura~\ref{fig:frame}), atingindo confiança de até $0{,}996$
 no melhor \emph{frame}, com taxa de processamento de centenas de FPS no PC.
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.62\columnwidth]{fig_frame_anotado.png}
 \caption{Detecção em vídeo (melhor \emph{frame}, confiança $0{,}996$).}
@@ -349,7 +349,7 @@ consecutivos acima do limiar.}
 \label{fig:campo}
 \end{figure*}
 
-\begin{figure}[!t]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=0.62\columnwidth]{fig_sem_placa.png}
 \caption{Rejeição correta: quadro sem placa nítida, confiança abaixo do limiar.}
