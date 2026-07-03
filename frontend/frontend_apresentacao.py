@@ -235,7 +235,11 @@ def listar_videos():
 def anotar_frame(frame_bgr, modo="rgb", fps_txt=""):
     pred, bbox, conf, cell, _ = detectar(frame_bgr, modo)
     h, w = frame_bgr.shape[:2]
-    out = frame_bgr.copy()
+    if modo == "gray3":  # exibe o que a rede ve (luminancia)
+        g = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+        out = cv2.cvtColor(g, cv2.COLOR_GRAY2BGR)
+    else:
+        out = frame_bgr.copy()
     placa = conf >= LIMIAR_PLACA
     cor = (0, 200, 0) if placa else (0, 140, 255)
     x1, y1, x2, y2 = bbox_yolo_para_pixel(bbox, w, h)
