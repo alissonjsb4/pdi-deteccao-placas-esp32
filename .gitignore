@@ -11,11 +11,8 @@ __pycache__/
 *.fls
 *.fdb_latexmk
 
-# Material de terceiros (feedback do monitor sobre outros trabalhos)
+# PDFs de terceiros
 relatorio/relatorio_PDI_Final*.pdf
-
-# Slides em edicao (entram no repo so quando finalizados)
-apresentacao/*.pdf
 
 # SO
 Thumbs.db

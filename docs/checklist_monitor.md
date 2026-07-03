@@ -25,7 +25,3 @@ Usar como revisão final de relatório e slides antes de entregar.
 10. **Experimento ruim → refazer**, não relatar com ressalvas.
 11. **Vários exemplos visuais de segmentação**, não um único caso.
 12. **Escolhas defendidas com trade-off** (ex.: edge × nuvem; INT8 × float).
-
-Status no nosso trabalho (02/07): todos os itens cobertos no
-`relatorio/Relatorio_Final.tex` (Figs. 1–9, Eq. 1) e no kit de slides
-(`apresentacao/kit_slides/SLIDES.md`).

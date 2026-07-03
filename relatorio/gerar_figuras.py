@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Gera automaticamente as figuras do relatorio a partir do video de teste,
-usando o MESMO modelo embarcado (via o pipeline de frontend_apresentacao.py).
+"""Gera as figuras do relatorio a partir do video de teste.
 
-- Varre todos os frames do video, roda a deteccao e escolhe:
-    * o melhor frame (maior confianca) -> figuras de deteccao + segmentacao
-    * um frame de baixa confianca       -> figura "sem placa" (rejeicao)
-- Salva PNGs prontos em relatorio/figuras/.
+Varre os frames, roda a deteccao e salva em relatorio/figuras/ os paineis do
+melhor frame (deteccao + segmentacao) e de um frame de baixa confianca.
 
 Uso: python relatorio/gerar_figuras.py
 """
@@ -17,7 +13,6 @@ import glob
 import numpy as np
 import cv2
 
-# importa o pipeline ja pronto (deteccao + segmentacao + render)
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, os.path.join(ROOT, "frontend"))
@@ -51,7 +46,6 @@ def salvar(nome, img_bgr):
 
 def montar_painel(cells, cols):
     """cells: lista de imagens BGR ja com titulo (mesma largura)."""
-    # normaliza largura
     w = max(c.shape[1] for c in cells)
     norm = []
     for c in cells:
@@ -98,13 +92,11 @@ def main():
     print(f"Melhor frame: #{melhor['idx']} conf={melhor['conf']:.3f}")
     print(f"Pior frame:   #{pior['idx']} conf={pior['conf']:.3f}")
 
-    # ---- figuras do MELHOR frame (placa) ----
     fr = melhor["frame"]; bbox = melhor["bbox"]; pred = melhor["pred"]
     vis = melhor["vis"]; conf = melhor["conf"]
     h, w = fr.shape[:2]
     cor = (0, 200, 0) if conf >= 0.95 else (255, 140, 0)
 
-    # frame completo anotado (modo video / tempo real)
     full = fr.copy()
     x1, y1, x2, y2 = F.bbox_yolo_para_pixel(bbox, w, h)
     cv2.rectangle(full, (x1, y1), (x2, y2), cor[::-1], 3)
@@ -113,7 +105,6 @@ def main():
                 (8, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, cor[::-1], 2)
     salvar("fig_frame_anotado.png", full)
 
-    # painel de deteccao: entrada | bbox(224) | heatmap
     vbox = vis.copy()
     bx1, by1, bx2, by2 = F.bbox_yolo_para_pixel(bbox, F.IMG_SIZE, F.IMG_SIZE)
     cv2.rectangle(vbox, (bx1, by1), (bx2, by2), cor, 2)
@@ -125,7 +116,6 @@ def main():
     ], cols=3)
     salvar("fig_deteccao.png", det)
 
-    # painel de segmentacao: ROI | mascara | caracteres
     img_rgb_full = cv2.cvtColor(fr, cv2.COLOR_BGR2RGB)
     roi, mask, seg = F.segmentar_roi_placa(img_rgb_full, bbox)
     mask3 = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
@@ -136,7 +126,6 @@ def main():
     ], cols=3)
     salvar("fig_segmentacao.png", segp)
 
-    # ---- figura do PIOR frame (sem placa / rejeicao) ----
     pf = pior["frame"]; pv = pior["vis"]; pc = pior["conf"]
     pann = pf.copy()
     cv2.rectangle(pann, (0, 0), (pf.shape[1], 30), (0, 0, 0), -1)

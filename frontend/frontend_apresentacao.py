@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Frontend de apresentacao — Detector de Placas (MobileNetV1 Grid + ESP32).
+"""Frontend de apresentacao do detector de placas (MobileNetV1 Grid + ESP32).
 
-Roda o MESMO modelo embarcado (modelo_grid_224_alpha_0p5_int8.tflite) no PC via
-LiteRT (~4 ms/inferencia) e a segmentacao em OpenCV. Serve uma pagina web local
-e offline em http://localhost:8000 com as 3 modalidades exigidas no enunciado:
-Imagem, Video e Tempo real.
+Roda o mesmo modelo embarcado no PC via LiteRT e serve uma pagina web local
+em http://localhost:8000 com as abas Imagem, Video, Tempo real e Metricas.
 
-Uso:
-    python frontend_apresentacao.py
-    python frontend_apresentacao.py 9000        # outra porta web
-
-Dependencias: ai-edge-litert, opencv-python, numpy  (ja instaladas).
-Fase atual: modo IMAGEM completo (deteccao + heatmap + segmentacao).
-            Video e Tempo real entram nas proximas fases.
+Uso: python frontend_apresentacao.py [porta]
+Dependencias: ai-edge-litert, opencv-python, numpy, pillow, pyserial.
 """
 import sys
 import os
@@ -44,21 +36,19 @@ except ImportError:
     sys.exit(1)
 
 try:
-    import serial  # pyserial (modo Tempo real / ESP)
+    import serial
     _HAS_SERIAL = True
 except ImportError:
     _HAS_SERIAL = False
 
-# --------------------------------------------------------------- config
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(HERE)  # raiz do repositorio (frontend/ fica dentro dela)
+REPO = os.path.dirname(HERE)
 MODEL_PATH = os.path.join(HERE, "modelo_grid_224_alpha_0p5_int8.tflite")
 IMG_SIZE = 224
 GRID = 7
 WEB_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-LIMIAR_PLACA = 0.85  # limiar operacional atual do firmware (calibrável 0,85–0,95)
+LIMIAR_PLACA = 0.85
 
-# --------------------------------------------------------------- modelo
 _interp = Interpreter(model_path=MODEL_PATH)
 _interp.allocate_tensors()
 _IN = _interp.get_input_details()[0]
@@ -68,7 +58,6 @@ _OUT_SCALE, _OUT_ZERO = _OUT["quantization"]
 _infer_lock = threading.Lock()
 
 
-# ------------------------------------------------------ decode (da notebook)
 def pos_processar_bbox(bbox):
     bbox = np.array(bbox, dtype=np.float32).copy()
     bbox = np.nan_to_num(bbox, nan=0.0, posinf=1.0, neginf=0.0)
@@ -111,7 +100,6 @@ def grade_para_bbox_global(pred_grid, limiar_conf=0.0):
     return bbox, conf_max, (int(row), int(col))
 
 
-# ------------------------------------------------------ inferencia
 def preprocess(img_bgr, modo="rgb"):
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     if modo == "gray3":
@@ -130,12 +118,11 @@ def detectar(img_bgr, modo="rgb"):
         _interp.set_tensor(_IN["index"], q)
         _interp.invoke()
         out = _interp.get_tensor(_OUT["index"])[0]
-    pred = (out.astype(np.float32) - _OUT_ZERO) * _OUT_SCALE  # (7,7,5) em [0,1]
+    pred = (out.astype(np.float32) - _OUT_ZERO) * _OUT_SCALE
     bbox, conf, cell = grade_para_bbox_global(pred, limiar_conf=0.0)
     return pred, bbox, conf, cell, vis
 
 
-# ------------------------------------------------------ segmentacao (cv2, da notebook)
 def expandir_bbox_pixel(x1, y1, x2, y2, img_w, img_h, padding=0.06):
     bw, bh = x2 - x1, y2 - y1
     px, py = int(bw * padding), int(bh * padding)
@@ -185,9 +172,8 @@ def segmentar_roi_placa(img_rgb, bbox_yolo, padding=0.06, escala=4):
     return roi_up, filt, seg
 
 
-# ------------------------------------------------------ render helpers
 def decode_image_bytes(raw):
-    """Decodifica bytes de imagem em BGR, respeitando orientacao EXIF (fotos de celular)."""
+    """Decodifica bytes de imagem em BGR, respeitando orientacao EXIF."""
     if _HAS_PIL:
         try:
             im = Image.open(io.BytesIO(raw))
@@ -221,7 +207,6 @@ def processar_imagem(img_bgr, modo="rgb"):
     cor = (0, 200, 0) if conf >= LIMIAR_PLACA else (255, 140, 0)
     x1, y1, x2, y2 = bbox_yolo_para_pixel(bbox, IMG_SIZE, IMG_SIZE)
     cv2.rectangle(img_box, (x1, y1), (x2, y2), cor, 2)
-    # segmentacao na imagem original (full-res) para caracteres nitidos
     img_rgb_full = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     roi_up, mask, seg = segmentar_roi_placa(img_rgb_full, bbox)
     return {
@@ -238,7 +223,6 @@ def processar_imagem(img_bgr, modo="rgb"):
     }
 
 
-# ------------------------------------------------------ video (modo Video)
 def listar_videos():
     exts = ("*.mp4", "*.mov", "*.avi", "*.mkv", "*.webm")
     achados = []
@@ -253,7 +237,7 @@ def anotar_frame(frame_bgr, modo="rgb", fps_txt=""):
     h, w = frame_bgr.shape[:2]
     out = frame_bgr.copy()
     placa = conf >= LIMIAR_PLACA
-    cor = (0, 200, 0) if placa else (0, 140, 255)  # BGR
+    cor = (0, 200, 0) if placa else (0, 140, 255)
     x1, y1, x2, y2 = bbox_yolo_para_pixel(bbox, w, h)
     cv2.rectangle(out, (x1, y1), (x2, y2), cor, 3)
     tag = "PLACA" if placa else "sem placa"
@@ -273,7 +257,7 @@ def gerar_stream_video(path_rel, modo="rgb"):
     while True:
         ok, frame = cap.read()
         if not ok:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # loop
+            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
             continue
         t0 = time.time()
         try:
@@ -294,8 +278,7 @@ def gerar_stream_video(path_rel, modo="rgb"):
     cap.release()
 
 
-# ------------------------------------------------------ ESP (modo Tempo real)
-ESP_THR = 0.85  # mesmo limiar gravado no firmware em 02/07 (calibrável 0,85–0,95)
+ESP_THR = 0.85
 esp_lock = threading.Lock()
 esp_state = {
     "connected": False, "board_status": "off", "port": "",
@@ -381,7 +364,6 @@ def esp_start(port):
     return True, "conectando"
 
 
-# --------------------------------------------------------------- pagina
 PAGE = r"""<!DOCTYPE html><html lang="pt-br"><head><meta charset="utf-8">
 <title>Detector de Placas — Apresentacao</title>
 <style>
@@ -459,7 +441,7 @@ table.mt th{color:#8b949e;font-weight:600} table.mt td.ok{color:#3fb950;font-wei
       <button class="primary" id="rtconn">Conectar a ESP</button>
       <span id="rtconnstatus" class="muted"></span>
     </div>
-    <p class="muted">Filmagem em tempo real com a camera OV5640 acoplada a ESP32-S3 (inferencia embarcada, ~2 min/frame). A ESP envia a foto com bounding box ao Telegram quando confianca &ge; 0,95.</p>
+    <p class="muted">Filmagem em tempo real com a camera OV5640 acoplada a ESP32-S3 (inferencia embarcada, ~2 min/frame). A ESP envia a foto com bounding box ao Telegram quando a confianca supera o limiar por 2 frames seguidos.</p>
     <div class="row">
       <span id="rtbadge" class="badge b-no">ESP desconectada</span>
       <span id="rtinfo" class="muted"></span>
@@ -473,9 +455,9 @@ table.mt th{color:#8b949e;font-weight:600} table.mt td.ok{color:#3fb950;font-wei
     </div>
     <div class="grid" style="grid-template-columns:1.3fr 1fr">
       <div class="mcard">
-        <h3>Confianca (Y) ao longo do tempo (X) — limiar 0,95</h3>
+        <h3>Confianca (Y) ao longo do tempo (X)</h3>
         <svg id="rtchart" viewBox="0 0 620 250" style="width:100%;height:250px"></svg>
-        <div class="muted" style="font-size:12px">● ponto = um frame analisado pela ESP &nbsp;·&nbsp; <span style="color:#3fb950">verde</span> ≥ 0,95 (placa) &nbsp;·&nbsp; <span style="color:#58a6ff">azul</span> abaixo</div>
+        <div class="muted" style="font-size:12px">● ponto = um frame analisado pela ESP &nbsp;·&nbsp; <span style="color:#3fb950">verde</span> ≥ limiar (placa) &nbsp;·&nbsp; <span style="color:#58a6ff">azul</span> abaixo</div>
       </div>
       <div class="mcard">
         <h3>Eventos da ESP</h3>
@@ -549,7 +531,7 @@ async function loadFile(f){
   if(!f) return;
   fileBytes=new Uint8Array(await f.arrayBuffer());
   setStatus(f.name+' carregada');
-  runDetect();           // auto-detecta ao escolher
+  runDetect();
 }
 async function runDetect(){
   if(!fileBytes){setStatus('escolha uma imagem primeiro');return;}
@@ -565,7 +547,7 @@ async function runDetect(){
       PANELS.forEach(k=>document.getElementById('i-'+k).src=d['img_'+k]);
       const b=document.getElementById('badge');
       if(d.placa){b.className='badge b-plate';b.textContent='PLACA DETECTADA';}
-      else{b.className='badge b-no';b.textContent='SEM PLACA (abaixo de 0,95)';}
+      else{b.className='badge b-no';b.textContent='SEM PLACA (abaixo do limiar)';}
       document.getElementById('info').textContent=
         'confianca '+d.conf.toFixed(3).replace('.',',')+' · celula ['+d.cell+'] · modo '+d.modo;
       setStatus('ok');
@@ -574,15 +556,13 @@ async function runDetect(){
   busy=false; run.disabled=false;
 }
 const fileInput=document.getElementById('file');
-fileInput.onchange=e=>{ loadFile(e.target.files[0]); fileInput.value=''; };  // reset p/ reescolher mesma img
+fileInput.onchange=e=>{ loadFile(e.target.files[0]); fileInput.value=''; };
 document.getElementById('run').onclick=runDetect;
-document.getElementById('modo').onchange=()=>{ if(fileBytes) runDetect(); }; // re-roda ao trocar rgb/gray3
-// arrastar e soltar
+document.getElementById('modo').onchange=()=>{ if(fileBytes) runDetect(); };
 const drop=document.getElementById('p-img');
 ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.outline='2px dashed #1f6feb';}));
 ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.outline='none';}));
 drop.addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
-// ----- modo Video -----
 const vsel=document.getElementById('vsel');
 async function carregarVideos(){
   try{
@@ -607,7 +587,6 @@ document.getElementById('vstart').onclick=vStart;
 document.getElementById('vstop').onclick=vStop;
 document.getElementById('vmodo').onchange=()=>{ if(document.getElementById('vstream').src) vStart(); };
 carregarVideos();
-// ----- modo Tempo real (ESP) -----
 document.getElementById('rtconn').onclick=async ()=>{
   const port=document.getElementById('rtport').value||'COM3';
   document.getElementById('rtconnstatus').textContent='conectando...';
@@ -616,22 +595,18 @@ document.getElementById('rtconn').onclick=async ()=>{
   }catch(e){document.getElementById('rtconnstatus').textContent='falha: '+e;}
 };
 function hhmmss(epoch){const d=new Date(epoch*1000);return d.toTimeString().slice(0,8);}
-function rtChart(hist){
+function rtChart(hist,thr){
   const W=620,H=250,L=44,R=14,T=12,B=34;
   const pw=W-L-R, ph=H-T-B, x0=L, y0=T+ph;
   let s='';
-  // eixos
   s+=`<line x1="${L}" y1="${T}" x2="${L}" y2="${y0}" stroke="#30363d" stroke-width="1"/>`;
   s+=`<line x1="${L}" y1="${y0}" x2="${W-R}" y2="${y0}" stroke="#30363d" stroke-width="1"/>`;
-  // grade Y + rotulos (confianca 0..1)
   [0,0.25,0.5,0.75,1].forEach(v=>{const y=T+(1-v)*ph;
     s+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#21262d" stroke-width="1"/>`;
     s+=`<text x="${L-6}" y="${y+4}" fill="#8b949e" font-size="11" text-anchor="end">${v.toFixed(2).replace('.',',')}</text>`;});
-  // linha do limiar 0,95
-  const yT=T+(1-0.95)*ph;
+  const yT=T+(1-thr)*ph;
   s+=`<line x1="${L}" y1="${yT}" x2="${W-R}" y2="${yT}" stroke="#f0883e" stroke-width="1.5" stroke-dasharray="6 5"/>`;
-  s+=`<text x="${W-R}" y="${yT-4}" fill="#f0883e" font-size="11" text-anchor="end">limiar 0,95</text>`;
-  // titulos dos eixos
+  s+=`<text x="${W-R}" y="${yT-4}" fill="#f0883e" font-size="11" text-anchor="end">limiar ${thr.toFixed(2).replace('.',',')}</text>`;
   s+=`<text transform="translate(13,${T+ph/2}) rotate(-90)" fill="#8b949e" font-size="12" text-anchor="middle">confianca</text>`;
   s+=`<text x="${W-R}" y="${H-6}" fill="#8b949e" font-size="12" text-anchor="end">tempo &#8594;</text>`;
   if(hist.length){
@@ -639,7 +614,7 @@ function rtChart(hist){
     const pts=hist.map((q,i)=>[x0+(n>1?i*st:pw/2), T+(1-Math.max(0,Math.min(1,q.c)))*ph, q.c, q.t]);
     s+=`<path d="${pts.map((q,i)=>(i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' ')}" fill="none" stroke="#58a6ff" stroke-width="2"/>`;
     const step=Math.max(1,Math.ceil(n/6));
-    pts.forEach((q,i)=>{const col=q[2]>=0.95?'#3fb950':'#58a6ff';
+    pts.forEach((q,i)=>{const col=q[2]>=thr?'#3fb950':'#58a6ff';
       s+=`<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3.5" fill="${col}"/>`;
       if(i%step===0||i===n-1)
         s+=`<text x="${q[0].toFixed(1)}" y="${y0+15}" fill="#8b949e" font-size="10" text-anchor="middle">${hhmmss(q[3])}</text>`;});
@@ -658,7 +633,7 @@ async function rtTick(){
     sub='A ESP esta ligando e conectando ao Wi-Fi. Verifique se o hotspot "4444" esta ligado.';}
   else if(c==null){b.className='badge b-no';b.textContent='Analisando 1o frame';
     sub='ESP capturando e processando o primeiro frame na propria placa (inferencia embarcada, ~2 min).';}
-  else if(c>=0.95){b.className='badge b-plate';b.textContent='PLACA DETECTADA';
+  else if(c>=d.threshold){b.className='badge b-plate';b.textContent='PLACA DETECTADA';
     sub='Confianca alta! Mantendo por '+d.frames_consec+'/'+d.frames_needed+' frames; ao confirmar, a ESP envia a foto com bounding box ao Telegram.';}
   else{b.className='badge b-no';b.textContent='SEM PLACA';
     sub='Analisando... ainda sem placa com confianca suficiente. Aponte a camera da ESP para uma placa bem enquadrada.';}
@@ -668,7 +643,6 @@ async function rtTick(){
     'frames consec. '+d.frames_consec+'/'+d.frames_needed;
   document.getElementById('rtfr').textContent=d.counters.frames;
   document.getElementById('rtdet').textContent=d.counters.detections;
-  // barra de progresso da inferencia (~117 s)
   const prog=document.getElementById('rtprog'), ptxt=document.getElementById('rtprogtxt'), ppct=document.getElementById('rtprogpct');
   if(d.connected && d.board_status==='ready' && d.last_frame_epoch){
     const el=Date.now()/1000-d.last_frame_epoch, pct=Math.min(100, el/d.infer_est*100);
@@ -679,7 +653,7 @@ async function rtTick(){
   } else { prog.style.width='0%'; ptxt.textContent='Inferencia do frame atual'; ppct.textContent=''; }
   document.getElementById('rtlog').innerHTML=d.events.map(e=>
     `<div style="padding:5px 6px;border-bottom:1px solid #21262d"><span style="color:#6e7681">${e.t}</span> ${e.msg}</div>`).join('');
-  rtChart(d.history);
+  rtChart(d.history, d.threshold);
 }
 setInterval(rtTick,1500); rtTick();
 </script></body></html>"""

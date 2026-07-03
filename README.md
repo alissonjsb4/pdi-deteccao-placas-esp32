@@ -13,7 +13,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 
 ---
 
-## 👥 Equipe
+## Equipe
 | Integrante | Frente principal |
 |---|---|
 | Carlos Vinícius dos Santos Mesquita | Segmentação / relatório / slides |
@@ -23,7 +23,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 
 ---
 
-## 🗂️ Estrutura do repositório
+## Estrutura do repositório
 ```
 .
 ├── README.md                  ← este arquivo
@@ -33,8 +33,6 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 │   ├── figuras/                   ← figuras do relatório
 │   ├── gerar_figuras.py           ← gera as figuras automaticamente do vídeo
 │   └── gerar_figuras_extras.py    ← figuras extras (pré-proc, Otsu, tempos, campo)
-├── apresentacao/              ← KIT DA APRESENTAÇÃO (deck final entra depois)
-│   └── kit_slides/                ← assets PNG + SLIDES.md (texto por slide)
 ├── firmware_esp32/            ← CÓDIGO QUE RODA NA ESP (Arduino)
 │   ├── Identificador_de_placas/   ← sketch (.ino + modelo .h + partições)
 │   └── README.md                  ← como gravar na placa
@@ -54,7 +52,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 
 ---
 
-## 🚀 Início rápido
+## Início rápido
 - **Ler o relatório:** [`relatorio/Relatorio_Final.pdf`](relatorio/Relatorio_Final.pdf)
 - **Rodar o frontend (PC):** veja [`frontend/README.md`](frontend/README.md)
   ```bash
@@ -67,7 +65,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 
 ---
 
-## 🧠 Como funciona
+## Como funciona
 1. **Captura** — câmera OV5640 fornece um JPEG.
 2. **Pré-processamento** — redimensiona para `224×224` e normaliza para `[-1,1]`.
 3. **Inferência** — MobileNetV1 (α=0,5) com cabeça de grade `7×7×5`: cada célula prevê
@@ -84,7 +82,7 @@ comparação de desempenho exigida no enunciado.
 
 ---
 
-## 📊 Resultados (medidos)
+## Resultados (medidos)
 
 **Detecção em imagem** — *bounding box* e mapa de confiança da grade:
 ![Detecção](docs/imagens/fig_deteccao.png)
@@ -113,7 +111,7 @@ ESP: placa real bem enquadrada → **0,98–0,99**; cena sem placa → **0,42–
 
 ---
 
-## 🔧 Modalidades demonstradas (enunciado)
+## Modalidades demonstradas (enunciado)
 - **Imagem** — detecção + segmentação sobre imagens estáticas (aba *Imagem* do frontend).
 - **Vídeo** — detecção quadro a quadro com FPS (aba *Vídeo*).
 - **Tempo real** — câmera OV5640 acoplada à ESP32-S3, inferência embarcada e envio
@@ -121,7 +119,7 @@ ESP: placa real bem enquadrada → **0,98–0,99**; cena sem placa → **0,42–
 
 ---
 
-## 🖥️ Hardware e ambiente
+## Hardware e ambiente
 - **Placa:** ESP32-S3 (16 MB flash, 8 MB PSRAM OPI, CPU 240 MHz) + câmera **OV5640**.
 - **Embarcado:** Arduino-ESP32 3.3.8 / ESP-IDF 5.5, biblioteca `TensorFlowLite_ESP32`.
 - **Treino:** Google Colab (TensorFlow 2.20.0, Python 3.12, GPU NVIDIA Tesla T4).
@@ -129,8 +127,8 @@ ESP: placa real bem enquadrada → **0,98–0,99**; cena sem placa → **0,42–
 
 ---
 
-## 📎 Links
-- 📓 Notebook de treino (Colab): https://colab.research.google.com/drive/1DE-1luzYAd5wMEtShC5QgKr9YezZuzg7
-- 🗃️ Base de dados: *Brazil Plates Detector* (Roboflow, CC BY 4.0)
-- 📄 Enunciado: [`docs/enunciado_trabalho.pdf`](docs/enunciado_trabalho.pdf)
+## Links
+- Notebook de treino (Colab): https://colab.research.google.com/drive/1DE-1luzYAd5wMEtShC5QgKr9YezZuzg7
+- Base de dados: *Brazil Plates Detector* (Roboflow, CC BY 4.0)
+- Enunciado: [`docs/enunciado_trabalho.pdf`](docs/enunciado_trabalho.pdf)
 
