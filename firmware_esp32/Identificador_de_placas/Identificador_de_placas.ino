@@ -60,8 +60,10 @@ const unsigned long COOLDOWN_TEMPO = 10000;
 
 // --- FILTRO DE CONFIANÇA E ESTABILIDADE ---
 // Só consideramos que existe mesmo uma placa se a confiança ficar ACIMA deste
-// valor (antes era 0.50, o que gerava muitos disparos falsos)...
-const float CONFIANCA_MINIMA = 0.95;
+// valor. Limiar OPERACIONAL, calibrável em campo entre 0.85 e 0.95 conforme a
+// iluminação/enquadramento da cena (com placa boa: 0.95-0.99; sem placa:
+// 0.42-0.58). Em 02/07 a cena de teste plateava em 0.82-0.92 -> 0.85.
+const float CONFIANCA_MINIMA = 0.85;
 // ...e durante este número de frames SEGUIDOS. Isto evita disparar por causa de
 // um único frame "sortudo". Aumente para ser mais rigoroso, diminua se ficar
 // difícil demais detetar a placa.
@@ -176,8 +178,8 @@ void setup() {
     WiFi.setSleep(false); 
     
     clientTCP.setInsecure(); 
-    clientTCP.setHandshakeTimeout(120000); 
-    clientTCP.setTimeout(30000); 
+    clientTCP.setHandshakeTimeout(15000);
+    clientTCP.setTimeout(15000);
     
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);

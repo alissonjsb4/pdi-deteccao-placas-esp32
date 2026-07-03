@@ -94,7 +94,7 @@ Negativas (sem placa)     & 12  & 4\\
 \section{Arquitetura e Detector por Grade}
 A arquitetura é a \textbf{MobileNetV1} com fator de largura (\emph{width
 multiplier}) $\alpha=0{,}5$ e entrada $224\times224\times3$. Sobre o
-\emph{backbone} pré-treinado adicionamos uma \textbf{cabeça de detecção por grade}
+\emph{backbone} \textbf{pré-treinado na ImageNet} adicionamos uma \textbf{cabeça de detecção por grade}
 que produz uma saída espacial $7\times7\times5$: a imagem é dividida em uma grade
 $7\times7$ e cada célula prevê uma confiança de objetos (\emph{objectness}) e os
 quatro parâmetros da caixa $(c_x, c_y, w, h)$. A detecção final corresponde à
@@ -107,29 +107,79 @@ $\alpha=0{,}5$ equilibra precisão e tamanho, essencial para o embarcamento.
 \section{Metodologia}
 \subsection{Pré-processamento}
 As imagens são redimensionadas para $224\times224$ e normalizadas para o intervalo
-$[-1,1]$ por $x_{norm}=x/127{,}5-1$. Avaliamos dois modos de cor: \textbf{RGB} e
-\textbf{gray3} (escala de cinza replicada em três canais), este último por vezes
-mais robusto a variações de cor. Durante o treino aplicamos \emph{Data
-Augmentation}: espelhamento horizontal, variações de brilho/contraste, ruído e
-desfoque.
+$[-1,1]$ por $x_{norm}=x/127{,}5-1$ (Figura~\ref{fig:preproc}). Em PDI é usual
+operar apenas sobre a \textbf{luminância} (imagens de um único canal); a
+MobileNetV1, porém, exige entrada de três canais. Para contornar essa limitação
+da arquitetura escolhida e ainda assim avaliar o comportamento clássico em tons
+de cinza, definimos o modo \textbf{gray3}, em que o canal de luminância é
+replicado nos três canais de entrada --- ganhando robustez a variações de cor
+entre bases e câmeras ---, além do modo \textbf{RGB} convencional. Os dois modos
+foram avaliados e permanecem selecionáveis em tempo de execução no
+\emph{frontend}. Durante o treino aplicamos \emph{Data Augmentation}:
+espelhamento horizontal, variações de brilho/contraste, ruído e desfoque
+(Figura~\ref{fig:preproc}e).
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.96\textwidth]{fig_preproc.png}
+\caption{Pré-processamento passo a passo: (a) imagem original; (b)
+redimensionamento para $224\times224$; (c) normalização para $[-1,1]$
+(visualizada em falsa cor); (d) modo gray3 (luminância replicada em três
+canais); (e) exemplo de \emph{Data Augmentation} (espelhamento + brilho).}
+\label{fig:preproc}
+\end{figure*}
 
 \subsection{Treinamento}
 O treino emprega o otimizador Adam em duas fases (\emph{transfer learning} seguido
 de \emph{fine-tuning} da cabeça): 12 e 50 épocas, \emph{batch} 8, com
-\texttt{ReduceLROnPlateau} e \texttt{EarlyStopping}, e função de perda combinando
-confiança (objectness) e regressão da caixa. Cada configuração foi executada
+\texttt{ReduceLROnPlateau} e \texttt{EarlyStopping}. A função de perda combina
+quatro termos com pesos fixos,
+\begin{equation}
+\mathcal{L} \;=\; 2\,\mathcal{L}_{\text{conf}}^{\text{obj}}
+\;+\; 0{,}25\,\mathcal{L}_{\text{conf}}^{\text{noobj}}
+\;+\; 8\,\mathcal{L}_{\text{box}}
+\;+\; 3\,\mathcal{L}_{\text{GIoU}},
+\label{eq:loss}
+\end{equation}
+em que $\mathcal{L}_{\text{conf}}^{\text{obj}}$ e
+$\mathcal{L}_{\text{conf}}^{\text{noobj}}$ são o erro quadrático da confiança,
+médio nas células \emph{com} e \emph{sem} objeto (o peso menor das células
+vazias evita que a maioria negativa domine o gradiente);
+$\mathcal{L}_{\text{box}}$ é a \emph{Smooth-L1} dos parâmetros locais
+$(c_x, c_y, w, h)$ na célula positiva; e $\mathcal{L}_{\text{GIoU}}$ é a perda
+GIoU da caixa global reconstruída a partir da grade, que maximiza a
+sobreposição real entre predição e anotação. Cada configuração foi executada
 \textbf{cinco vezes}, reportando-se média e desvio padrão (Seção~\ref{sec:res}). O
 ambiente de treino foi o Google Colab (TensorFlow~2.20.0, Python~3.12, GPU
 NVIDIA Tesla~T4).
 
 \subsection{Pós-processamento}
 Aplicamos \textbf{filtragem por confiança}: a detecção só é considerada válida
-quando a confiança ultrapassa o limiar $0{,}95$ e se mantém por
+quando a confiança ultrapassa um limiar operacional (projetado em $0{,}95$ e
+recalibrável em campo; Seção~\ref{sec:res}) e se mantém por
 \textbf{2 \emph{frames} consecutivos}, reduzindo disparos espúrios. Em seguida,
 realizamos a \textbf{segmentação dos caracteres} da placa (obrigatória) por
-técnicas clássicas de OpenCV: recorte da ROI, equalização local (CLAHE), realce
-por \emph{BlackHat}, limiarização de Otsu/adaptativa e filtragem de componentes
-conectados (Figura~\ref{fig:seg}).
+técnicas clássicas de OpenCV, ilustradas etapa a etapa na
+Figura~\ref{fig:segetapas}: (i) recorte da ROI prevista; (ii) equalização local
+de contraste (CLAHE); (iii) transformação \emph{BlackHat}, que realça
+estruturas escuras (caracteres) sobre fundo claro (placa); (iv)
+\textbf{limiarização de Otsu} sobre o resultado --- o método escolhe
+automaticamente o limiar que maximiza a variância entre as classes
+fundo/caractere do histograma (Figura~\ref{fig:segetapas}d) --- combinada com
+limiar adaptativo; e (v) limpeza morfológica com filtragem de componentes
+conectados por área e proporção. A Figura~\ref{fig:seg} mostra o resultado
+sobre um quadro de vídeo e a Figura~\ref{fig:segex} apresenta exemplos
+adicionais em fotografias reais capturadas para o trabalho.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\columnwidth]{fig_seg_etapas.png}
+\caption{Etapas da segmentação: (a) ROI recortada da caixa prevista; (b) CLAHE;
+(c) BlackHat; (d) histograma do BlackHat com o limiar de Otsu selecionado
+(linha tracejada); (e) máscara após limpeza morfológica; (f) caracteres
+segmentados.}
+\label{fig:segetapas}
+\end{figure}
 
 \begin{figure}[!t]
 \centering
@@ -137,6 +187,14 @@ conectados (Figura~\ref{fig:seg}).
 \caption{Pós-processamento: ROI da placa, máscara de segmentação e caracteres
 segmentados (OpenCV).}
 \label{fig:seg}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.92\columnwidth]{fig_seg_exemplos.png}
+\caption{Exemplos adicionais de detecção e segmentação em três fotografias
+reais (conjunto \texttt{imagens\_teste}).}
+\label{fig:segex}
 \end{figure}
 
 \subsection{Conversão e Quantização para a ESP32}
@@ -163,7 +221,10 @@ ESP-IDF~5.5).
 \subsection{Desempenho de detecção (cinco execuções)}
 A Tabela~\ref{tab:cinco} apresenta as métricas médias e desvios das cinco execuções.
 O modelo atinge \emph{recall} elevado na Base~1 e no conjunto combinado; o
-desempenho menor na Base~2 reflete sua maior dificuldade e menor tamanho.
+desempenho menor na Base~2 reflete sua maior dificuldade e menor tamanho. O
+\emph{score balanceado} indicado na tabela é a média simples dos IoU médios das
+duas bases, $(\text{IoU}_{B1}+\text{IoU}_{B2})/2$ --- critério usado para
+selecionar o modelo final sem favorecer a base maior.
 
 \begin{table}[!t]
 \centering
@@ -179,16 +240,25 @@ F1@0,5             & $0{,}983$ & $0{,}750$ & $0{,}944$\\
 \bottomrule
 \end{tabular}
 \par\smallskip
-\footnotesize Score balanceado: $0{,}655\pm0{,}015$.
+\footnotesize Score balanceado (média dos IoU de B1 e B2): $0{,}655\pm0{,}015$.
 \end{table}
 
 \subsection{Comparação PC vs.\ ESP32 e validação da quantização}
-A Tabela~\ref{tab:plat} compara plataformas. A quantização INT8 \textbf{preservou a
+A Tabela~\ref{tab:plat} compara plataformas e a Figura~\ref{fig:tempolog}
+resume os tempos em escala logarítmica. A quantização INT8 \textbf{preservou a
 qualidade} (IoU praticamente idêntico ao Keras), reduzindo o modelo de 8{,}75~MB
 (Float32) para 2{,}35~MB. No PC a inferência custa poucos milissegundos; na
 ESP32-S3, $\sim$117~s por \emph{frame}, cerca de $1{,}7\times10^{4}$ vezes mais
 lenta. O gargalo decorre dos \emph{kernels} de referência da biblioteca
 TFLite~Micro e do acesso à PSRAM, não do modelo em si.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=0.95\columnwidth]{fig_tempo_log.png}
+\caption{Tempo de inferência do mesmo modelo em cada plataforma (escala
+logarítmica). O arquivo INT8 é idêntico no PC e na ESP32-S3.}
+\label{fig:tempolog}
+\end{figure}
 
 \begin{table}[!t]
 \centering
@@ -254,7 +324,30 @@ no melhor \emph{frame}, com taxa de processamento de centenas de FPS no PC.
 \textbf{Tempo real.} A captura ao vivo com a OV5640 acoplada à ESP32-S3 produziu
 detecção embarcada com confiança $0{,}97$, disparando o envio automático da imagem
 anotada (Telegram). A Figura~\ref{fig:semplaca} ilustra a correta \emph{rejeição}
-de um quadro sem placa nítida (confiança abaixo de $0{,}95$).
+de um quadro sem placa nítida (confiança abaixo do limiar).
+
+A Figura~\ref{fig:campo} registra uma sessão completa de operação em campo
+(02/07): cada ponto é uma inferência embarcada ($\sim$117~s). Observa-se que a
+confiança com placa presente depende do enquadramento e da iluminação da cena
+--- nessa sessão, o platô ficou em $0{,}82$--$0{,}92$, abaixo dos
+$0{,}95$--$0{,}99$ obtidos em cenas bem iluminadas. Por isso o limiar de disparo
+é tratado como \textbf{parâmetro de operação calibrável em campo} (entre
+$0{,}85$ e $0{,}95$, sempre acima da faixa sem placa de $0{,}42$--$0{,}58$): com
+o limiar recalibrado para $0{,}85$, dois \emph{frames} consecutivos válidos
+dispararam o envio, e a fotografia anotada chegou ao Telegram \textbf{18~s}
+após a detecção. A exigência de 2 \emph{frames} consecutivos manteve-se
+efetiva: oscilações isoladas abaixo do limiar zeraram a contagem sem gerar
+disparos espúrios.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.9\textwidth]{fig_confianca_campo.png}
+\caption{Sessão de operação em campo (02/07): confiança por inferência na
+ESP32-S3, limiar de disparo recalibrado em campo (linha tracejada), faixa sem
+placa medida (área sombreada) e disparo do Telegram após 2 \emph{frames}
+consecutivos acima do limiar.}
+\label{fig:campo}
+\end{figure*}
 
 \begin{figure}[!t]
 \centering

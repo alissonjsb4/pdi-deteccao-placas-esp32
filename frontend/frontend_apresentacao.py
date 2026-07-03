@@ -56,7 +56,7 @@ MODEL_PATH = os.path.join(HERE, "modelo_grid_224_alpha_0p5_int8.tflite")
 IMG_SIZE = 224
 GRID = 7
 WEB_PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
-LIMIAR_PLACA = 0.95  # mesmo limiar do firmware
+LIMIAR_PLACA = 0.85  # limiar operacional atual do firmware (calibrável 0,85–0,95)
 
 # --------------------------------------------------------------- modelo
 _interp = Interpreter(model_path=MODEL_PATH)
@@ -295,7 +295,7 @@ def gerar_stream_video(path_rel, modo="rgb"):
 
 
 # ------------------------------------------------------ ESP (modo Tempo real)
-ESP_THR = 0.95
+ESP_THR = 0.85  # mesmo limiar gravado no firmware em 02/07 (calibrável 0,85–0,95)
 esp_lock = threading.Lock()
 esp_state = {
     "connected": False, "board_status": "off", "port": "",

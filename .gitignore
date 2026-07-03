@@ -8,6 +8,11 @@ __pycache__/
 *.out
 *.toc
 *.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Material de terceiros (feedback do monitor sobre outros trabalhos)
+relatorio/relatorio_PDI_Final*.pdf
 
 # SO
 Thumbs.db

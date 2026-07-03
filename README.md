@@ -31,7 +31,10 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 │   ├── Relatorio_Final.pdf        ← PDF pronto
 │   ├── Relatorio_Final.tex        ← fonte LaTeX (Overleaf-ready)
 │   ├── figuras/                   ← figuras do relatório
-│   └── gerar_figuras.py           ← gera as figuras automaticamente do vídeo
+│   ├── gerar_figuras.py           ← gera as figuras automaticamente do vídeo
+│   └── gerar_figuras_extras.py    ← figuras extras (pré-proc, Otsu, tempos, campo)
+├── apresentacao/              ← SLIDES E KIT DA APRESENTAÇÃO
+│   └── kit_slides/                ← assets PNG + SLIDES.md (texto por slide)
 ├── firmware_esp32/            ← CÓDIGO QUE RODA NA ESP (Arduino)
 │   ├── Identificador_de_placas/   ← sketch (.ino + modelo .h + partições)
 │   └── README.md                  ← como gravar na placa
@@ -70,7 +73,9 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 3. **Inferência** — MobileNetV1 (α=0,5) com cabeça de grade `7×7×5`: cada célula prevê
    uma confiança (*objectness*) e a caixa `(cx, cy, w, h)`.
 4. **Decodificação** — escolhe a **célula de maior confiança** e reconstrói a *bounding box*.
-5. **Filtragem** — só dispara se a confiança ≥ **0,95** por **2 frames** consecutivos.
+5. **Filtragem** — só dispara se a confiança ≥ **limiar operacional** por **2 frames**
+   consecutivos. O limiar é calibrável em campo (**0,85–0,95**, conforme iluminação
+   da cena; sempre acima da faixa sem placa, 0,42–0,58) — valor atual do firmware: 0,85.
 6. **Segmentação** — isola os caracteres da placa com OpenCV (CLAHE + BlackHat + Otsu).
 7. **Saída** — envia a imagem anotada ao **Telegram** (na ESP) ou exibe no **frontend** (PC).
 
