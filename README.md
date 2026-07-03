@@ -37,7 +37,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 │   ├── Identificador_de_placas/   ← sketch (.ino + modelo .h + partições)
 │   └── README.md                  ← como gravar na placa
 ├── frontend/                 ← APLICAÇÃO DE APRESENTAÇÃO (Python, web local)
-│   ├── frontend_apresentacao.py   ← app com 4 abas (imagem/vídeo/tempo real/métricas)
+│   ├── frontend_apresentacao.py   ← app com 3 abas (imagem/vídeo/tempo real)
 │   ├── modelo_grid_224_alpha_0p5_int8.tflite
 │   └── README.md                  ← como rodar
 ├── modelo_treinamento/       ← TREINO E EXPORTAÇÃO DO MODELO

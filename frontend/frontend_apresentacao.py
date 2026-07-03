@@ -3,7 +3,7 @@
 """Frontend de apresentacao do detector de placas (MobileNetV1 Grid + ESP32).
 
 Roda o mesmo modelo embarcado no PC via LiteRT e serve uma pagina web local
-em http://localhost:8000 com as abas Imagem, Video, Tempo real e Metricas.
+em http://localhost:8000 com as abas Imagem, Video e Tempo real.
 
 Uso: python frontend_apresentacao.py [porta]
 Dependencias: ai-edge-litert, opencv-python, numpy, pillow, pyserial.
@@ -406,7 +406,6 @@ table.mt th{color:#8b949e;font-weight:600} table.mt td.ok{color:#3fb950;font-wei
   <div class="tab on" data-t="img">Imagem</div>
   <div class="tab" data-t="vid">Video</div>
   <div class="tab" data-t="rt">Tempo real</div>
-  <div class="tab" data-t="met">Metricas</div>
 </div>
 <main>
   <div id="p-img" class="panel on">
@@ -472,48 +471,6 @@ table.mt th{color:#8b949e;font-weight:600} table.mt td.ok{color:#3fb950;font-wei
       <span class="muted">Frames analisados: <b id="rtfr">0</b></span>
       <span class="muted">Deteccoes enviadas: <b id="rtdet">0</b></span>
       <span class="muted">~117 s por inferencia (embarcado)</span>
-    </div>
-  </div>
-  <div id="p-met" class="panel">
-    <p class="muted">Resultados reais medidos no projeto (treino no Colab + execucao na ESP32-S3). Use estes paineis para prints do relatorio.</p>
-    <div class="mcard">
-      <h3>Deteccao por grade — 5 execucoes (media &plusmn; desvio)</h3>
-      <table class="mt">
-        <tr><th>Metrica</th><th>Base 1 (prof.)</th><th>Base 2 (escolhida)</th><th>Mix</th></tr>
-        <tr><td>IoU medio</td><td>0,7682 &plusmn; 0,0024</td><td>0,5427 &plusmn; 0,0304</td><td>0,7306 &plusmn; 0,0048</td></tr>
-        <tr><td>Recall (IoU&ge;0,5)</td><td>0,9733 &plusmn; 0,0133</td><td>0,6667 &plusmn; 0,0745</td><td>0,9222 &plusmn; 0,0142</td></tr>
-        <tr><td>F1@0,5</td><td>0,983</td><td>0,750</td><td>0,944</td></tr>
-      </table>
-      <p class="muted">Score balanceado: 0,6554 &plusmn; 0,0148. Melhor modelo = execucao 5.</p>
-    </div>
-    <div class="mcard">
-      <h3>Comparacao de plataformas — tempo de inferencia &amp; tamanho</h3>
-      <table class="mt">
-        <tr><th>Modelo / plataforma</th><th>Tempo/inferencia</th><th>Tamanho</th><th>IoU (Mix)</th></tr>
-        <tr><td>Keras (PC, float)</td><td>~96,9 ms</td><td>—</td><td>0,7362</td></tr>
-        <tr><td>TFLite Float32 (PC)</td><td>~6,5 ms</td><td>8,75 MB</td><td>0,7362</td></tr>
-        <tr><td>TFLite INT8 (PC, LiteRT)</td><td><b>~4&ndash;7 ms</b></td><td>2,35 MB</td><td>0,7321</td></tr>
-        <tr><td><b>TFLite INT8 (ESP32-S3)</b></td><td><b>~117.000 ms</b></td><td>2,35 MB</td><td>—</td></tr>
-      </table>
-      <p class="muted">Quantizacao preservou a qualidade (IoU ~igual). PC e ~17.000&times; mais rapido que a ESP.</p>
-    </div>
-    <div class="mcard">
-      <h3>Efeito das negativas — falsos positivos por limiar (4 imagens sem placa)</h3>
-      <table class="mt">
-        <tr><th>Limiar</th><th>0,50</th><th>0,90</th><th>0,95</th><th>0,98</th></tr>
-        <tr><td>Falsos positivos</td><td>4/4</td><td>1/4</td><td><b>0/4</b></td><td>0/4</td></tr>
-      </table>
-      <p class="muted">Confirma o limiar 0,95: zero falso positivo, sem degradar os positivos (conf media ~0,99).</p>
-    </div>
-    <div class="mcard">
-      <h3>Confianca medida na ESP32-S3 (modelo antigo &times; novo com negativas)</h3>
-      <table class="mt">
-        <tr><th>Cenario</th><th>Antigo</th><th>Novo (negativas)</th><th>Dispara?</th></tr>
-        <tr><td>Placa real, camera correta</td><td>0,91&ndash;0,97</td><td><b>0,98&ndash;0,99</b></td><td class="ok">Sim</td></tr>
-        <tr><td>Placa numa tela de monitor</td><td>0,62&ndash;0,83</td><td>0,95&ndash;0,98</td><td class="ok">Sim</td></tr>
-        <tr><td>Site/tela sem carros</td><td>~0,62</td><td>0,63&ndash;0,78</td><td>Nao</td></tr>
-        <tr><td>Sem placa nenhuma</td><td>~0,62</td><td><b>0,42&ndash;0,58</b></td><td>Nao</td></tr>
-      </table>
     </div>
   </div>
 </main>
