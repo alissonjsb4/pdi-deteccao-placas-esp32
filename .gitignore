@@ -14,6 +14,9 @@ __pycache__/
 # Material de terceiros (feedback do monitor sobre outros trabalhos)
 relatorio/relatorio_PDI_Final*.pdf
 
+# Slides em edicao (entram no repo so quando finalizados)
+apresentacao/*.pdf
+
 # SO
 Thumbs.db
 .DS_Store

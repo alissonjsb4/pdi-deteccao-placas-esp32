@@ -172,10 +172,37 @@ com a barra de progresso — e a foto caindo no Telegram."
 
 ---
 
-## Ordem sugerida do deck final (23 slides)
+## Slide N9 — Saída final: a mensagem no Telegram
 
-1–12 = atuais · **N1, N2, N3, N4** (bloco embarcado) · **N5, N6, N7, N8**
-(bloco frontend) · 13 (Resultados) · 14 (Conclusão) · 15 (Créditos corrigido).
+🖼 **usar um print do celular** com o chat do bot (tem fotos reais das sessões
+de 30/06 e 02/07) — de preferência mostrando a foto anotada + o horário.
+
+Bullets:
+- Confirmada a detecção (2 frames ≥ limiar), a ESP desenha a bounding box
+  verde na imagem, recomprime para JPEG e envia via **API do Telegram**
+  (POST multipart/form-data direto no `api.telegram.org`, sem servidor
+  intermediário).
+- A foto chega no chat **~18 s** após a detecção (medido em campo) — upload em
+  chunks de 1 KB sobre TLS.
+- **Cooldown de 10 s** após cada envio evita spam com o carro parado na frente
+  da câmera; a contagem de frames zera e o ciclo recomeça.
+- Robustez: timeouts de 15 s derrubam conexões penduradas; se o envio falhar,
+  o sistema continua detectando e tenta no próximo disparo.
+
+🗣 "O Telegram é o 'atuador' do sistema: a prova de que o pipeline embarcado
+fechou o ciclo — da luz que entrou na lente até a notificação no celular —
+sem nenhum computador no meio."
+
+---
+
+## Ordem sugerida do deck final (24 slides)
+
+1–12 = atuais · **N1, N2, N3, N4** (bloco embarcado) · **N9** (Telegram) ·
+**N5, N6, N7, N8** (bloco frontend) · 13 (Resultados) · 14 (Conclusão) ·
+15 (Créditos corrigido).
 
 Dica: no slide 13 ("Análise de Resultados em Campo"), citar oralmente que a
 tabela completa com desvios está no relatório (5 execuções).
+
+Obs.: o PDF do deck não é versionado no repo enquanto estiver em edição
+(`apresentacao/*.pdf` está no .gitignore); commitar apenas a versão final.

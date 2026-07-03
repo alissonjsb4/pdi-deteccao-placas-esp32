@@ -33,7 +33,7 @@ modalidades exigidas: **imagem, vídeo e tempo real**.
 │   ├── figuras/                   ← figuras do relatório
 │   ├── gerar_figuras.py           ← gera as figuras automaticamente do vídeo
 │   └── gerar_figuras_extras.py    ← figuras extras (pré-proc, Otsu, tempos, campo)
-├── apresentacao/              ← SLIDES E KIT DA APRESENTAÇÃO
+├── apresentacao/              ← KIT DA APRESENTAÇÃO (deck final entra depois)
 │   └── kit_slides/                ← assets PNG + SLIDES.md (texto por slide)
 ├── firmware_esp32/            ← CÓDIGO QUE RODA NA ESP (Arduino)
 │   ├── Identificador_de_placas/   ← sketch (.ino + modelo .h + partições)
