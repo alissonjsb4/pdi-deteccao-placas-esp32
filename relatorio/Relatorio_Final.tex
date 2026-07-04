@@ -366,6 +366,34 @@ negativas eliminaram os falsos positivos no limiar de operação. A qualidade da
 câmera OV5640 e o desfoque por movimento afetam a confiança, mitigados por bom
 enquadramento e pela exigência de detecção estável por múltiplos \emph{frames}.
 
+\subsection{Hipóteses para a latência de $\sim$2 minutos por \emph{frame}}
+Como o mesmo arquivo INT8 executa em milissegundos no PC, a lentidão está no
+ambiente de execução embarcado, não no modelo. As hipóteses, em ordem de impacto
+estimado, e as respectivas soluções são:
+\begin{enumerate}
+\item \textbf{Kernels de referência da TFLite~Micro:} a biblioteca
+\texttt{TensorFlowLite\_ESP32} usa implementações genéricas em C++, sem
+instruções vetoriais nem otimizações para o Xtensa LX7. \emph{Solução:} migrar
+para o \texttt{esp-tflite-micro} oficial da Espressif com os \emph{kernels}
+otimizados \textbf{ESP-NN}, que aceleram convoluções INT8 tipicamente em uma
+ordem de grandeza.
+\item \textbf{Tensor arena na PSRAM:} os 3~MB de área de trabalho residem na
+PSRAM externa (barramento OPI), cuja latência é muito maior que a da SRAM
+interna; cada acesso a ativações intermediárias paga esse custo.
+\emph{Solução:} reduzir o pico de memória (entrada menor, menos filtros) até a
+arena caber, ao menos parcialmente, na SRAM interna, ou elevar o \emph{clock}
+da PSRAM.
+\item \textbf{Custo computacional da entrada $160\times160$:} as primeiras
+camadas da MobileNetV1 dominam o número de multiplicações-acumulações.
+\emph{Solução:} treinar com entrada $96\times96$ ou aplicar
+\emph{width multiplier} $\alpha<1$, reduzindo o custo de forma quase
+quadrática com pequena perda de IoU.
+\item \textbf{Execução em núcleo único a 240~MHz sem aceleração dedicada:} a
+ESP32-S3 não possui NPU, e a inferência ocupa um único núcleo.
+\emph{Solução alternativa:} transmitir o \emph{frame} da câmera para inferência
+em um servidor na rede local, mantendo o dispositivo apenas como captura.
+\end{enumerate}
+
 \section{Conclusão e Trabalhos Futuros}
 Desenvolvemos um detector de placas com MobileNetV1 e cabeça por grade, embarcado e
 funcional na ESP32-S3, avaliado nas três modalidades e comparado ao PC. A solução é
